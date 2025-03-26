@@ -1,0 +1,306 @@
+from os import abort
+from flask.views import View, MethodView
+
+from flask import Flask, url_for, request, render_template, make_response, session, redirect, jsonify, flash
+
+app = Flask(__name__, template_folder='templates', static_folder='static', static_url_path='/static_index')
+app.secret_key = '1234567890'
+print(__name__)
+
+
+@app.route('/hello')
+@app.route('/flask')
+def hello():  # put application's code here
+    return 'Hello Flask!'
+
+
+# 使用app.add_url_rule(rule, endpoint=None, view_func=None, **options)
+# 动态的添加路由
+def hello_added():
+    return '使用app.add_url_rule添加的路由'
+
+
+app.add_url_rule('/hello_added', view_func=hello_added)
+
+
+## print(type(app.url_map))
+# <class 'werkzeug.routing.map.Map'>
+## print(app.url_map)
+# Map([<Rule '/static/<filename>' (GET, HEAD, OPTIONS) -> static>,
+#  <Rule '/flask' (GET, HEAD, OPTIONS) -> hello>,
+#  <Rule '/hello' (GET, HEAD, OPTIONS) -> hello>,
+#  <Rule '/hello_added' (GET, HEAD, OPTIONS) -> hello_added>])
+
+# 解析动态路由==》指可以接受不同参数的URL,这些参数用于识别特定资源或者页面
+@app.route('/book/<id>')
+@app.route(
+    '/book/<int:id>')  # <int:id> 是一个整数类型的转换器，用于将路由接收的参数id转换为int型， 此外， 还支持 string(default), int, float, path, uuid等类型
+def show_book(id):
+    print(type(id))
+    return f'书籍信息为：{id}, 根据id进行数据库查询，这里省略'
+
+
+###############################
+# url_for() 用于动态的使Flask应用使用指定的 函数名称 和 及其参数 生成 URL，
+@app.route('/index')
+def home():
+    url = url_for('home')
+    print(f'欢迎来到FLask世界， {url}')
+    return url
+
+
+@app.route('/detail/<int:id>')
+def detail(id):
+    url = url_for('detail', id=3)
+    print(f'欢迎来到明细界面， {id}')
+    return url
+
+
+@app.route('/request_list')
+def request_list():
+    if request.method == 'GET':
+        print("url参数为——>" + request.url)
+        print("base_url参数为——>" + request.base_url)
+        print("host_url参数为——>" + request.host_url)
+        print("path参数为——>" + request.path)
+        print("full_path参数为——>" + request.full_path)
+        print("scheme参数为——>" + request.scheme)
+        print("请求方式为——>" + request.method)
+        print("Host为——>" + request.host)
+        print("args参数是——>" + request.args["id"])
+        print("args参数是——>" + request.args.get("aid", 'args没有参数'))
+        print("remote_addr参数为——>" + request.remote_addr)
+        print("user_agent参数为——>" + str(request.user_agent))
+        print("headers参数为——>" + str(request.headers))
+        print("cookies参数为——>" + str(request.cookies))
+        print("environ参数为——>" + str(request.environ))
+        return "request-GET测试"
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+    else:
+        print("请求方式为——>" + request.method)
+        print("form参数为——>" + str(request.form))
+        print("form参数为——>" + request.form["username"])
+        print("form参数为——>" + request.form.get("password"))
+        print("form参数为——>" + request.form.get("name", "这个参数不存在"))
+        return "request-POST测试"
+
+
+@app.route('/response_list', methods=['GET', 'POST'])
+def response_list():
+    response = make_response("Hello Flask!")
+    response.mimetype = "text/plain"
+    print(response.data)
+    print(response.content_type)
+    print(response.status_code)
+    print(response.headers)
+    return response
+
+
+@app.route('/set_cookies', methods=['GET', 'POST'])
+def set_cookies():
+    resp = make_response("Hello Flask")
+    #设置cookie有效期，浏览器关闭就失效
+    resp.set_cookie("username", "admin")
+    #设置cookie有效期，max_age单位为秒
+    resp.set_cookie("pwd", "123456", max_age=60)
+    print(resp.headers)
+    return resp
+
+
+# 获取cookie
+@app.route("/get_cookies")
+def get_cookies():
+    resp = request.cookies.get("username")
+    print(type(resp))  # 类型为：str
+    print(resp)
+    return resp
+
+
+# 删除cookies
+@app.route("/del_cookies")
+def del_cookies():
+    resp = make_response("del")
+    # 删除(过期)cookies
+    resp.delete_cookie("pwd")
+    print(resp.headers)
+    return resp
+
+
+@app.route("/session_index")
+def session_index():
+    if 'username' in session:
+        username = session['username']
+        return f'用户名{username}<br><b><a href="/session_logout">单击注销</a></b>'
+    return '未登录, <br><a href="/session_login"><b>单击登录</b></a>'
+
+
+@app.route("/session_login", methods=['GET', 'POST'])
+def session_login():
+    if request.method == 'POST':
+        session['username'] = request.form['username']
+        return redirect(url_for('session_index'))
+    return '''
+    <form action="" method="post">
+        <p><input type="text" name="username" placeholder="请输入用户名"/></p>
+        <p><input type="submit" value="登录"/></p>
+    </form>
+    '''
+
+
+@app.route("/session_logout")
+def session_logout():
+    session.pop('username', None)
+    return redirect(url_for('session_index'))
+
+
+@app.route('/view_index')
+def view_index():
+    data = {'name': 'GarryChen', 'age': 23}
+    return render_template('dict_view_index.html', **data)
+
+
+@app.route('/redirect_bilibili')
+def redirect_bilibili():
+    return redirect('https://www.bilibili.com/')
+
+
+@app.route('/test/<int:value>')
+def test(value):
+    if value < 0:
+        abort(400)
+    return f'异常值{value}'
+
+
+@app.errorhandler(404)
+def page_404(error):
+    print(error)
+    return render_template('GarryChen_404.html')
+
+
+@app.route('/json_data')
+def json_data():
+    data = {
+        'name': 'admin',
+        'age': 23,
+        'sex': 'male'
+    }
+    return jsonify(data)
+
+
+class IndexView(View):
+    methods = ['GET']
+
+    def dispatch_request(self):
+        if request.method == "GET":
+            data = {'name': 'admin', 'age': 23}
+            return render_template('dict_view_index.html', **data)
+
+app.add_url_rule('/', view_func=IndexView.as_view('index'))
+
+
+class UserView(MethodView):
+    def get(self, user_id):
+        # print('user_view:get')
+        return f'{user_id}'
+
+    def post(self):
+        print('user_view:post')
+
+    def put(self, user_id):
+        print('user_view:put')
+
+    def delete(self, user_id):
+        print('user_view:delete')
+
+
+user_view = UserView.as_view('user')
+app.add_url_rule('/user/', view_func=user_view, methods=['POST'])
+app.add_url_rule('/user/<int:user_id>', view_func=user_view, methods=['DELETE', 'PUT', 'GET'])
+
+
+### Chapter 3 : Jinja 2 模板
+@app.route('/var', methods=['GET', 'POST'])
+def var():
+    username = 'admin'
+    lists = ['Java', 'Python', 'C', 'C#', 'GO']
+    dicts = {'name': 'admin', 'age': 23, 'sex': 'male'}
+    return render_template('var.html', username=username, lists=lists, dicts=dicts)
+
+@app.route('/forloop')
+def forloop():
+    dict1 = {'书名': 'Flask+Vue.js开发', '价格': 80, '作者': '张三'}
+    dict2 = {'书名': 'Python+ChatGPT开发', '价格': 90, '作者': '李四'}
+    dict3 = {'书名': 'Django+Vue.js开发', '价格': 100, '作者': '王五'}
+    lists = [dict1, dict2, dict3]
+    return render_template('forloop.html', lists=lists)
+
+@app.route('/filter')
+def filter():
+    return render_template('filter.html')
+
+@app.route('/html_safe')
+def html_safe():
+    html_addr = "<table border=1><tr><td>这是一个表格</td></tr></table>"
+    html_script = "<script language='javascript'>document.write('非法执行');</script>"
+    return render_template('index.html', html_addr=html_addr, html_script=html_script)
+
+# 自定义Flask 的模板过滤器
+@app.template_filter('show_title')
+def show_title(value, n):
+    if len(value) > n:
+        return f'{value[0:n]}'
+    else:
+        return value
+
+# 应用自定义模板过滤器
+@app.route('/diy_filter')
+def diy_filter():
+    dict1 = {'标题': '学习Python的好方法就是每天不间断地写代码'}
+    dict2 = {'标题': '学习Flask的好方法就是上手做个项目比如CMS、OA等'}
+    dict3 = {'标题': '学习新知识的好方法就是快速构建一颗知识树'}
+    lists = [dict1, dict2, dict3]
+    return render_template('diy_filter.html', lists=lists)
+
+
+@app.template_global('show_title_v2')
+def show_title(value, n):
+    if len(value) > n:
+        return f'{value[0:n]}....'
+    else:
+        return value
+
+
+@app.route('/diy_filter_v2')
+def diy_filter_v2():
+    dict1 = {'标题': '学习Python的好方法就是每天不间断地写代码'}
+    dict2 = {'标题': '学习Flask的好方法就是上手做个项目比如CMS、OA等'}
+    dict3 = {'标题': '学习新知识的好方法就是快速构建一颗知识树'}
+    lists = [dict1, dict2, dict3]
+    return render_template('diy_filter_v2.html', lists=lists)
+
+
+@app.route('/base_index', methods=['GET', 'POST'])
+def base_index():
+    return render_template('base_index.html')
+
+@app.route('/static_index')
+def static_index():
+    return render_template('static_index.html')
+
+@app.route('/flash_login', methods=['GET', 'POST'])
+def flash_login():
+    flash('你已成功登录', 'info')
+    return redirect(url_for("flash_index"))
+
+@app.route('/flash_index', methods=['GET', 'POST'])
+def flash_index():
+    flash('欢迎来到首页', 'info' )
+    return render_template('flash_index.html')
+
+if __name__ == '__main__':
+    app.run()

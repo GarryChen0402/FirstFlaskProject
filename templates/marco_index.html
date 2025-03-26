@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>模板中宏的使用</title>
+</head>
+<body>
+<form action="">
+    {% macro input() %}
+        <input type="text" name="username" value="Flask">
+    {% endmacro %}
+
+    {% macro input2(name,type='text',value = '') %}
+        <div>
+            <input type="{{ type }}" name="{{ name }}" value="{{ value }}">
+        </div>
+    {% endmacro %}
+    <!-- 定义用户名 username -->
+    {{ input() }}
+    <!-- 定义密码 password -->
+    {{ input2('password',type = "password") }}
+    <!-- 定义年龄age -->
+    {{ input2('age',type = "number",value=20) }}
+</form>
+</body>
+</html>

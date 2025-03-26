@@ -1,0 +1,24 @@
+<style>
+    .info{
+        position:relative;
+        padding:15px 15px;
+        margin-bottom:10px;
+        border:1px solid black;
+        color:#004085;
+        background-color:#cce5ff;
+        border-color: #b8daff;
+
+    }
+</style>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul class="flash-messages">
+            {% for message in messages %}
+                <div class="info">{{ message }}</div>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<a href="{{ url_for('flash_login') }}">登录</a>
