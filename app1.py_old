@@ -1,0 +1,12 @@
+from flask import Flask
+import config
+app = Flask(__name__)
+# 从python文件中读取配置
+# app.config.from_pyfile("config.py")
+# 将python文件导入， 作为对象 读入配置
+app.config.from_object(config)
+
+
+print(app.config["HOST"])
+print(app.config["MYSQL"])
+print(app.config["COPYRIGHT"])
