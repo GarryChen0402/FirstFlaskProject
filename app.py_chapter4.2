@@ -1,0 +1,50 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from sqlalchemy import text
+import os
+
+base_dir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__)
+
+
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://gyc:051342gyc@localhost:3306/myflaskdb'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(base_dir, 'data.sqlite')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_COMMIT_TEARDOWN'] = True
+# app.config['SQLALCHEMY_ECHO'] = True
+# app.config['SQLALCHEMY_POOL_SIZE'] = 20
+# app.config['SQLALCHEMY_MAX_OVERFLOW'] = 30
+# app.config['SQLALCHEMY_POOL_TIMEOUT'] = 10
+# app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+#     'pool_pre_ping': True,
+#     'pool_recycle': 3600,
+# }
+
+db = SQLAlchemy(app)
+
+# 4.2 自定义模型
+class User(db.Model):
+    __tablename__ = 'tb_user'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True)
+    sex1 = db.Column(db.Integer, nullable=False, default=0, comment="性别  0 男  1女")
+    sex2 = db.Column(db.Integer, nullable=False, server_default=text("0"), comment="性别  0 男  1女")
+    status1 = db.Column(db.Boolean, nullable=False, default=True, comment="人员状态  0 False  1 True")
+    status2 = db.Column(db.Boolean, nullable=False, server_default=text("False"), comment="人员状态  0 False  1 True")
+    createdate1 = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    createdate2 = db.Column(db.DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+    def __repr__(self):
+        return f'{self.id}, {self.username}'
+
+db.drop_all()
+db.create_all()
+
+if __name__ == '__main__':
+    pass
+#     # print('-'*100)
+#     # print(db)
+#     # print('-'*100)
+#     print('db create down!')
