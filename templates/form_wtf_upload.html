@@ -1,0 +1,15 @@
+<form action="{{ url_for('form_wtf_upload') }}" method="post" enctype="multipart/form-data" novalidate>
+    {{ form.csrf_token }}
+    <p>
+        {{ form.username.label }} : {{ form.username }}
+        {{ form.username.errors[0] }}
+    </p>
+
+    <p>
+        {{ form.file.label }} : {{ form.file }}
+        {{ form.file.errors[0] }}
+    </p>
+
+    {{ form.submit() }}
+</form>
+<img src="{{ url_for('static', filename='uploads/') }}{{ form.file.data.filename }}" width="150" height="200" >

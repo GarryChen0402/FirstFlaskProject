@@ -1,0 +1,31 @@
+<form method="POST">
+    <label>用户名:</label>
+    <input type="text" id="username" required><br>
+    <label>密码:</label>
+    <input type="password" id="password" required><br>
+    <input type="button" id="btLogin" value="登录">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+</form>
+<script src="{{ url_for('static',filename='plugins/jquery/jquery.min.js') }}"></script>
+<script>
+    $("#btLogin").click(function () {
+        $.ajax({
+            url: "{{ url_for('ajax_login_data') }}", //后端请求地址
+            type: "POST", //请求方式
+            data: {//请求参数
+                username: $("#username").val(),
+                password: $("#password").val(),
+                {#"csrf_token": $("[name = 'csrf_token']").val()#}
+                "csrf_token": "{{ csrf_token() }}"
+            },
+            //请求成功后操作
+            success: function (data) {
+                alert(data.msg)
+            },
+            //请求失败后操作
+            error: function (jqXHR, textStatus, err) {
+                console.log(arguments);
+            },
+        })
+    })
+</script>

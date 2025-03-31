@@ -1,0 +1,15 @@
+<html>
+<body>
+<form action="{{ url_for('form_upload_v2')}}" method="POST" enctype="multipart/form-data" novalidate>
+    {{ form.csrf_token() }}
+    <p>{{ form.username.label }}:{{ form.username }}
+        {{ form.username.errors[0] }}
+    </p>
+    <p>{{ form.photos.label }}{{ form.photos }}
+        {{ form.photos.errors[0] }}
+    </p>
+    {{ form.submit() }}
+</form>
+<img src="{{ img_url }}"  width="150",height="200">
+</body>
+</html>

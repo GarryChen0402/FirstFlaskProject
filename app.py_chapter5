@@ -1,0 +1,138 @@
+## Chapter 5
+import os.path
+import uuid
+# from crypt import methods
+
+#
+# from Tools.scripts.make_ctype import method
+# 5.1
+from flask import Flask, request, render_template, redirect, jsonify
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileRequired, FileAllowed, FileField
+from werkzeug.utils import secure_filename
+from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
+from wtforms.fields.simple import StringField, SubmitField
+from wtforms.validators import DataRequired, Length
+from flask_wtf.csrf import CSRFProtect
+from forms import UserInfoForm, UploadFileForm
+
+imgs = UploadSet('photos', IMAGES)
+app = Flask(__name__)
+app.config['SECRET_KEY'] = '1234567890'
+csrf = CSRFProtect(app)
+filepath = os.path.abspath(os.path.dirname(__file__))
+savepath = os.path.join(filepath, 'static')
+savepath = os.path.join(savepath, 'uploads')
+
+app.config['UPLOADED_PHOTOS_DEST'] = savepath
+app.config['UPLOADED_PHOTOS_ALLOW'] = set(['png', 'jpg', 'jpeg'])
+configure_uploads(app, imgs)
+patch_request_class(app)
+
+@app.route('/form_login', methods=['GET', 'POST'])
+def form_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username and password:
+            if username=='admin' and password=='123456':
+                return render_template('form_login.html', message='Login Succeed')
+            else:
+                return render_template('form_login.html', message='Login Failed')
+        else:
+            return render_template('form_login.html', message='Please input your username and password')
+    else:
+        return render_template('form_login.html')
+
+@app.route('/form_upload_file', methods=['GET', 'POST'])
+def form_upload_file():
+    path = os.path.join(os.path.dirname(__file__), 'media/uploads')
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    if request.method=='POST':
+        files = request.files
+        myfile = files['myfile']
+        if myfile:
+            filename = secure_filename((myfile.filename))
+            file_name = os.path.join(path, filename)
+            myfile.save(file_name)
+    return render_template('form_upload.html')
+
+@app.route('/userinfo', methods=['GET', 'POST'])
+def userinfo():
+    form = UserInfoForm()
+    if request.method == 'GET':
+        return render_template('userinfo.html', form=form)
+    else:
+        if form.validate_on_submit():
+            username = form.username.data
+            password = form.password.data
+            return redirect('/')
+        else:
+            return render_template('userinfo.html', form=form)
+
+@app.route('/form_wtf_upload', methods=['GET', 'POST'])
+def form_wtf_upload():
+    file_form = UploadFileForm()
+    if file_form.validate_on_submit():
+        print(f'Username: {file_form.username.data}')
+
+        f = file_form.file.data
+        print(f'file_form.data type is {f}')
+
+        filename = f.filename
+
+        print(f'filename : {filename}')
+
+
+        if not os.path.exists(savepath):
+            os.makedirs(savepath)
+        f.save(os.path.join(savepath, filename))
+        return render_template("form_wtf_upload.html", form=file_form)
+
+    return render_template("form_wtf_upload.html", form=file_form)
+
+class UploadForm_v2(FlaskForm):
+    username = StringField(label='用户名', validators=[DataRequired(message="用户名不能为空"),
+                                                       Length(2, 30, message="用户名称长度在2-30位之间")],
+                           render_kw={'class': 'form-control', 'placeholder': "请输入用户名称"}
+                           )
+
+    photos = FileField(label='用户头像', validators=[FileRequired(message="请上传用户头像"),
+                                                     FileAllowed(imgs, message="只能上传图片格式")],
+                       render_kw={'class': 'form-control'})
+
+    submit = SubmitField(label="提交")
+
+@app.route('/form_upload_v2', methods=['GET', 'POST'])
+def form_upload_v2():
+    myform = UploadForm_v2()
+    if myform.validate_on_submit():
+        shuffix = os.path.splitext(myform.photos.data.filename)[-1]
+        name = str(uuid.uuid4()) + shuffix
+        print(name)
+        filename = imgs.save(myform.photos.data, name=name)
+        print(filename)
+        img_url = imgs.url(filename)
+        print(img_url)
+        return render_template("upload.html", form=myform, img_url=img_url)
+    return render_template("upload.html", form=myform, img_url=None)
+
+@app.route('/ajax_login', methods=['get', 'post'])
+def ajax_login():
+    return render_template('ajax_login.html')
+
+@app.route('/ajax_login_data', methods=['get', 'post'])
+def ajax_login_data():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if username=='GarryChen' and password=='123456':
+        return jsonify({'code':'200', 'msg':'Login Success'})
+    else:
+        return jsonify({'code':'400', 'msg':'Login Filed'})
+
+
+
+if __name__=='__main__':
+    app.run()
